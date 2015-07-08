@@ -2,4 +2,123 @@
 <body>
 <h1>hello world!</h1>
 </body>
+<script>
+var objectStorage = objectStorage || {
+get: function(name){
+return localStorage.getItem(name);
+},
+set: function(name, JSONobjectToStore, expDate){
+var objectToStore = JSON.parse(JSONobjectToStore);
+var d = new Date(expDate);
+var expiryDate = d.toJSON();
+var t = new Date();
+var timeStamp = t.toJSON();
+//append expirydate property using helper method appendToObjectHelper
+objectToStore = objectStorage.helpers.appendToObjectHelper(objectToStore, "expDate", expDate);
+objectToStore = objectStorage.helpers.appendToObjectHelper(objectToStore, "timeStamp", timeStamp);
+newJSONObjectToStore=JSON.stringify(objectToStore);
+localStorage.setItem(name, newJSONObjectToStore);
+var objectSet = objectStorage.get(name);
+if(objectSet!=null && objectSet.toString().length>0){
+$j(document).trigger(name);
+}
+},
+helpers: {
+isSet : function(name){
+var objectSet = objectStorage.get(name);
+if(objectSet!=null && objectSet.toString().length>0){
+return true;
+}else
+return false;
+},
+appendToObjectHelper : function(orginalObject, propName, value){
+//todo: append to orginalObject
+orginalObject[propName]=value
+return orginalObject;
+},
+isSupported: function() {
+var testKey = 'test', storage = window.sessionStorage;
+try {
+storage.setItem(testKey, '1');
+storage.removeItem(testKey);
+return true;
+} catch(e) {
+return false;
+}
+},
+expiryDateHelper : {
+expiryEndOfDay : function(){
+var d = new Date();
+d.setHours(24,0,0,0);
+//needs to output to toISOString();
+return d.toISOString();
+},
+expiryEndOfDayOrCutOffHour : function(cutOff){
+//based on central time zone hour of day 12 is noon and 24 is midnight Central time.
+//if no passed specified hour default to midnight
+var d = new Date();
+var currentDate = new Date();
+if(cutOff.toString().length<=2 && !isNaN(cutOff)){
+var n = d.getTimezoneOffset()/60 //hours to offset to build UTChour;
+var UTChour = cutOff + n;
+d.setUTCHours(UTChour,0,0,0);
+if(currentDate>d){
+d.setHours(24,0,0,0);
+}
+}else{
+// default to users local time zone midnight.
+d.setHours(24,0,0,0);
+}
+//needs to output to toISOString();
+return d.toISOString();
+},
+cutOffHour : function(cutOff){
+//based on central time zone hour of day 12 is noon and 24 is midnight Central time.
+var d = new Date();
+var currentDate = new Date();
+if(cutOff.toString().length<=2 && !isNaN(cutOff)){
+var n = d.getTimezoneOffset()/60 //hours to offset to build UTChour;
+var UTChour = cutOff + n;
+d.setUTCHours(UTChour,0,0,0);
+if(currentDate>d){
+d.setDate(d.getDate()+1);
+}
+}
+//needs to output to toISOString();
+return d.toISOString();
+},
+expiryDate : function(exp){//based on calendar day. Expires at the end of specified day.
+var d = new Date();
+d.setTime(Date.parse(exp));
+d.setHours(24,0,0,0)
+//needs to output to toISOString();
+return d.toISOString();
+},
+neverExpire: function(){
+var d = new Date('12/31/9999');
+//needs to output to toISOString();
+return d.toISOString();
+},
+isExpired: function(localStorage) { //takes in a localStorage ID and checks if expired (or doesn't exist) return true, else if valid return false
+//get localStorage object
+var object = objectStorage.get(localStorage);
+if (object == null) {
+console.log("null");
+return true;
+} else {
+//get the expiration date
+var exp = new Date(JSON.parse(object).expDate);
+var now = new Date();
+if (now >= exp) {
+return true;
+} else {
+return false;
+}
+}
+}
+}
+}
+};
+</script>
+
 </html>
